@@ -1,0 +1,179 @@
+flights %>% filter(month==1 | month==2)
+flights %>% filter (month %in% C(1,2))
+filter(flights, !(arr_delay > 120 | dep_delay > 120))
+filter(flights, arr_delay <= 120, dep_delay <=120)
+(df <- tibble(x=c(1, NA,3)))
+df %>% filter (x >1)
+arrange(flights, year, month, day)
+flights %>% arrange(desc(month))
+arrange(df,x)
+arrange(df,desc(x))
+flights %>% select (year, month, day)
+flights %>% select (year : day)
+flights %>% select (-(year:day))
+flights %>% rename (tail_num = tailnum)
+flights %>% select (tail_num = tailnum)
+flights %>% select (time_hour, air_time, everything())
+flights_sml <- flights %>% select(year:day, ends_with("delay"), distance, air_time)
+flights_sml %>% mutate(gain= dep_delay - arr_delay, speed = distance / air_time * 60)
+flights_sml %>% mutate (gain = dep_delay, hours = air_time / 60, gain_per_hour = gain / hours)
+flights %>% transmute (gain = dep_delay- arr_delay, hours =air_time/60, gain_per_hour = gain / hours)
+flights %>% transmute (dep_time, hour = dep_time %/% 100, minute = dep_time %% 100)
+(x <- 1:10)
+lag(x)  
+lead(x)
+x; cunsum(x), cumprod(x)
+x
+cumsum(x)
+x; cumsum(x); cumprod(x)
+flights %>% summarize(delay = mean(dep_delay, na.rm = TRUE))
+by_day <- group_by(flights, year, month, day)
+summarize(by_day, delay = mean(dep_delay, na.rm = TRUE))
+flights %>%
+  group_by(year, month, day) %>%
+  summarize (mean = mean(dep_delay, na.rm = TRUE))
+delays <- flights %>%
+  group_by(dest) %>%
+  summarize(count = n(),
+    dist = mean(distance, na.rm = TRUE),
+    delay = mean(arr_delay, na.rm = TRUE)  )%>%
+  filter(count > 20, dest != "HNL")
+View(delays)
+delays %>% ggplot(mapping = aes( x=dist, y=delay))+
+  geom_point(aes(size=count),alpha = 1/3)+
+  geom_smooth(se=FALSE)
+flights %>% group_by(year, month, day) %>%
+  summarize(mean = mean(dep_delay, na.rm=TRUE))
+not_cancelled <- flights %>%
+  filter(!is.na(dep_delay), !is.na(arr_delay))
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarise(mean=mean(dep_delay))
+delays <- not_cancelled %>%
+  group_by(tailnum) %>%
+  summarize(delay = mean(arr_delay, na.rm=TRUE),
+            n = n())
+delays %>% ggplot(mapping =aes(x=delay))+
+  geom_freqpoly(binwidth = 10)
+ggplot(data = delays, mapping = aes(x=n, y=delay))+
+  geom_point(alpha = 1/10)
+delays %>% filter(n>25) %>%
+  ggplot(mapping = aes(x=n, y=delay)) + geom_point(alpha=1/10)
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarize(
+    avg_delay1 = mean(arr_delay),
+    avg_delay2 = mean (arr_delay[arr_delay > 0])
+  )
+not_cancelled %>%
+  group_by(dest) %>%
+  summarize(distance_sd = sd(distance)) %>%
+  arrange(desc(distance_sd))
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarize(
+    first = min(dep_time),
+    last = max(dep_time)  )
+not_cancelled %>%
+  group_by(dest) %>%
+  summarise(carriers = n_distinct(carrier))%>%
+  arrange(desc(carriers))
+not_cancelled %>%
+  count(dest) %>%
+  arrange(desc(dest))
+not_cancelled %>%
+  count(tailnum, wt = distance)
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarize(n_early = sum(dep_time < 500))
+not_cancelled %>%
+  group_by(year, month, day) %>%
+  summarize(hour_prop = mean(arr_delay > 60))
+daily <- group_by(flights, year, month,day)
+(per_day <- summarize(daily, flights =n()))
+(per_month <- summarize(per_day, flights = sum(flights)))
+(per_year <- summarize(per_month, flights = sum(flights)))          
+daily %>%
+  ungroup() %>%
+  summarise(flights = n())
+flights_sml <- flights %>% select(year:day, ends_with("delay"), distance, air_time)
+flights_sml %>%
+  group_by(year, month ,day) %>%
+  filter(rank(desc(arr_delay))<10)
+(popular_dests <- flights %>% group_by(dest) %>%
+  filter(n()>365))
+popular_dests %>%
+  filter(arr_delay>0) %>%
+  mutate(prop_delay = arr_delay / sum(arr_delay)) %>%
+  select(year:day, dest, arr_delay, prop_delay)
+ggplot(data = diamonds) +
+  geom_bar(mapping = aes(x = cut))
+diamonds %>%
+  count(cut)
+ggplot(data= diamonds) +
+  geom_histogram(mapping = aes(x=carat), binwidth = 0.5)
+diamonds %>%
+  count(cut_width(carat, 0.5))
+smaller <- diamonds %>%
+  filter(carat <3)
+ggplot(data = smaller, mapping = aes(x = carat)) +
+  geom_histogram(binwidth = 0.01)
+ggplot(data=smaller, mapping = aes(x=carat, color=cut))+
+  geom_freqpoly(binwidth = 0.1)
+ggplot(data=faithful, mapping = aes(x = eruptions))+
+  geom_histogram(binwidth = 0.25)
+ggplot(diamonds) +
+  geom_histogram(mapping = aes (x = y), binwidth = 0.5) +
+  coord_cartesian(ylim = c(0,50))
+(unusual <- diamonds %>%
+  filter( y<3 | y>20) %>%
+  select(price,x,y,z) %>%
+  arrange(y))
+diamonds2 <- diamonds %>%
+  filter(between(y, 3,20))
+diamonds2 <- diamonds %>%
+  mutate(y = ifelse(y < 3 | y > 20, NA, y))
+ggplot(data = diamonds2, mapping = aes(x=x,y=y)) +
+  geom_point(na.rm = TRUE)
+ggplot(data = diamonds, mapping = aes(x = price))+
+  geom_freqpoly(mapping = aes(color = cut), binwidth = 500)
+ggplot(data = diamonds, mapping = aes(x=price, y=..density..))+
+  geom_freqpoly(mapping = aes(color = cut), binwidth = 500)
+ggplot(data = diamonds, mapping = aes(x=cut, y=price)) +
+    geom_boxplot()
+ggplot(data=mpg, mapping = aes(x=class, y = hwy)) +
+  geom_boxplot()
+ggplot(data=mpg) +
+  geom_boxplot(mapping = aes(x= reorder(class, hwy, FUN = median), y = hwy))
+ggplot(data=mpg) +
+  geom_boxplot(mapping = aes(x = reorder (class, hwy, FUN = median),y = hwy)) +
+  coord_flip()
+ggplot(data = diamonds) +
+  geom_count(mapping = aes(x = cut, y = color))
+diamonds %>%
+  count(color, cut)
+diamonds %>%
+  count(color, cut) %>%
+  ggplot(mapping = aes(x=color,y=cut)) +
+     geom_tile(mapping = aes(fill = n))
+ggplot(data= diamonds) +
+  geom_point(mapping = aes(x = carat, y = price))
+ggplot(data= diamonds) +
+  geom_point(mapping = aes(x = carat, y = price), alpha = 1/100)
+ggplot(data = smaller) +
+  geom_bin2d(mapping = aes(x=carat, y=price))
+ggplot(data = smaller) +
+  geom_hex(mapping = aes(x=carat, y = price))
+ggplot(data=faithful) +
+  geom_point(mapping = aes(x=eruptions, y = waiting))
+mod <- lm(log(price) ~ log(carat), data = diamonds)
+
+diamond2 <- diamonds %>%
+  add_residuals(mod) %>%
+  mutate(resid = exp(resid))
+ggplot(data = diamond2) +
+  geom_point(mapping = aes(x= carat, y = resid))
+ggplot(data=diamond2) +
+  geom_boxplot(mapping = aes(x=cut, y=resid))
+
+  
